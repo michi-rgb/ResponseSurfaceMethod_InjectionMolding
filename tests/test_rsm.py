@@ -40,3 +40,13 @@ def test_grid_search_stays_inside_experimental_range():
     assert len(quality) == 125
     for column in conditions:
         assert conditions[column].between(data[column].min(), data[column].max()).all()
+
+
+def test_dynamic_factor_and_response_counts():
+    inputs = ["温度", "圧力", "時間", "速度"]
+    outputs = ["強度", "外観"]
+    data = create_sample_data(inputs, outputs)
+    models = fit_models(data, inputs, outputs)
+    assert len(data) == 25
+    assert set(models) == set(outputs)
+    assert all(model.input_columns == tuple(inputs) for model in models.values())
