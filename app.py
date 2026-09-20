@@ -135,11 +135,17 @@ with st.sidebar:
         else:
             limits[response] = (None, None)
 
-tab_doe, tab_data, tab_model, tab_surface, tab_window, tab_predict = st.tabs(
-    ["実験計画", "データ", "モデル精度", "応答曲面", "プロセスウィンドウ", "条件予測"]
+tab_labels = ["実験計画", "データ", "モデル精度", "応答曲面", "プロセスウィンドウ", "条件予測"]
+selected_tab = st.segmented_control(
+    "表示画面",
+    tab_labels,
+    default=tab_labels[0],
+    key="selected_tab",
+    label_visibility="collapsed",
+    width="stretch",
 )
 
-with tab_doe:
+if selected_tab == tab_labels[0]:
     st.subheader("応答曲面用の実験条件表を作成")
     design_options = (
         ["Box–Behnken計画", "中心複合計画（CCD）"]
@@ -286,13 +292,13 @@ with tab_doe:
             "先頭の実行順・標準順・点種別・コード列を残したまま本アプリへ読み込めます。"
         )
 
-with tab_data:
+if selected_tab == tab_labels[1]:
     source = "アップロードデータ" if uploaded else "デモデータ"
     st.subheader(f"{source}（{len(data)}点）")
     st.dataframe(data, width="stretch", hide_index=True)
     st.caption("モデルは入力データの最小～最大範囲内で使用してください。範囲外への外挿は行いません。")
 
-with tab_model:
+if selected_tab == tab_labels[2]:
     metrics = pd.DataFrame(
         [
             {
@@ -314,7 +320,7 @@ with tab_model:
     )
     st.caption("係数は平均0・標準偏差1に標準化した因子に対する値です。絶対値が大きい項ほど影響が強い目安になります。")
 
-with tab_surface:
+if selected_tab == tab_labels[3]:
     col_a, col_b, col_c = st.columns(3)
     selected_response = col_a.selectbox(
         "表示する出力応答", output_columns, key="surface_response"
@@ -372,7 +378,7 @@ with tab_surface:
     ) or "固定因子なし"
     st.caption(f"{fixed_text}。白丸は全実験点の{x_name}–{y_name}投影です。")
 
-with tab_window:
+if selected_tab == tab_labels[4]:
     col_a, col_b = st.columns(2)
     wx = col_a.selectbox("横軸", input_columns, index=0, key="window_x")
     wy_options = [name for name in input_columns if name != wx]
@@ -448,7 +454,7 @@ with tab_window:
     else:
         st.warning("現在の品質規格を同時に満たす条件は探索グリッド内で見つかりませんでした。")
 
-with tab_predict:
+if selected_tab == tab_labels[5]:
     st.subheader("任意条件での品質予測")
     condition = {}
     columns = st.columns(min(3, len(input_columns)))
@@ -465,7 +471,11 @@ with tab_predict:
         lower, upper = limits[response]
         ok = (lower is None or predicted_values[response] >= lower) and (upper is None or predicted_values[response] <= upper)
         prediction_rows.append(
-            {"出力応答": response, "予測値": predicted_values[response], "判定": "規格内" if ok else "規格外"}
+            {
+                "出力応答": response,
+                "予測値": predicted_values[response],
+                "判定": "✔ 規格内" if ok else "✖ 規格外",
+            }
         )
-    st.dataframe(pd.DataFrame(prediction_rows), width="stretch", hide_index=True)
+    st.dataframe(pd.DataFrame(prediction_rows), width="content", hide_index=True)
     st.caption("予測値は統計モデルによる推定です。量産条件の決定前に、推奨点と境界付近で確認実験を実施してください。")
