@@ -5,13 +5,14 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from doe import generate_design
+from doe import DesignName, generate_design
 from rsm import INPUT_COLUMNS, OUTPUT_COLUMNS
 
 
 def create_sample_data(
     input_columns: list[str] = INPUT_COLUMNS,
     output_columns: list[str] = OUTPUT_COLUMNS,
+    design_name: DesignName | None = None,
 ) -> pd.DataFrame:
     known_levels = {
         "射出速度": (40.0, 100.0),
@@ -22,7 +23,8 @@ def create_sample_data(
         factor: known_levels.get(factor, (0.0, 100.0))
         for factor in input_columns
     }
-    design_name = "box-behnken" if len(input_columns) >= 3 else "central-composite"
+    if design_name is None:
+        design_name = "box-behnken" if len(input_columns) >= 3 else "central-composite"
     design = generate_design(
         design_name,
         levels,

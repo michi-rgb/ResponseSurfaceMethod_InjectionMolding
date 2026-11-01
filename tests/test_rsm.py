@@ -21,6 +21,17 @@ def test_models_fit_and_predict_all_responses():
         assert np.isfinite(prediction).all()
 
 
+def test_ccd_sample_contains_factorial_axial_and_centre_points():
+    data = create_sample_data(design_name="central-composite")
+    assert len(data) == 15
+    coded = (data[["射出速度", "保圧圧力", "金型温度"]] - [70, 60, 70]) / [30, 20, 20]
+    nonzero_counts = coded.ne(0).sum(axis=1)
+    assert (nonzero_counts == 3).sum() == 8
+    assert (nonzero_counts == 1).sum() == 6
+    assert (nonzero_counts == 0).sum() == 1
+    assert all(np.isfinite(model.predict(data)).all() for model in fit_models(data).values())
+
+
 def test_feasible_mask_combines_limits():
     prediction = {
         "ヒケ深さ": np.array([0.1, 0.3, 0.1]),

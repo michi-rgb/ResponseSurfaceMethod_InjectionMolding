@@ -22,6 +22,10 @@ from rsm import (
 from sample_data import create_sample_data
 
 
+def save_design_selection() -> None:
+    st.session_state.design_selection = st.session_state.design_selection_widget
+
+
 st.set_page_config(page_title="射出成形プロセスウィンドウ", page_icon="🧩", layout="wide")
 st.title("樹脂射出成形｜応答曲面とプロセスウィンドウ")
 st.caption("任意の入力因子と出力応答について、二次応答曲面とプロセスウィンドウを推定します。")
@@ -85,14 +89,23 @@ with st.sidebar:
 
     st.header("2. 実験データ")
     uploaded = st.file_uploader("CSVを選択", type="csv")
-    sample = create_sample_data(input_columns, output_columns)
+    design_options = (
+        ["Box–Behnken計画", "中心複合計画（CCD）"]
+        if len(input_columns) >= 3
+        else ["中心複合計画（CCD）"]
+    )
+    if st.session_state.get("design_selection") not in design_options:
+        st.session_state.design_selection = design_options[0]
+    design_label = st.session_state.design_selection
+    design_name = "box-behnken" if design_label.startswith("Box") else "central-composite"
+    sample = create_sample_data(input_columns, output_columns, design_name)
     st.download_button(
         "入力テンプレートをダウンロード",
         sample.to_csv(index=False).encode("utf-8-sig"),
         file_name="射出成形_RSM_入力例.csv",
         mime="text/csv",
     )
-    demo_design = "Box–Behnken" if len(input_columns) >= 3 else "面中心型CCD"
+    demo_design = "Box–Behnken" if design_name == "box-behnken" else "面中心型CCD"
     st.caption(
         f"未選択時は{demo_design}計画（中心点1回）のデモデータを使用します。"
         "列名と単位はプロジェクト内で統一してください。"
@@ -147,21 +160,19 @@ selected_tab = st.segmented_control(
 
 if selected_tab == tab_labels[0]:
     st.subheader("応答曲面用の実験条件表を作成")
-    design_options = (
-        ["Box–Behnken計画", "中心複合計画（CCD）"]
-        if len(input_columns) >= 3
-        else ["中心複合計画（CCD）"]
-    )
-    design_label = st.radio(
+    if st.session_state.get("design_selection_widget") != design_label:
+        st.session_state.design_selection_widget = design_label
+    st.radio(
         "実験計画",
         design_options,
         horizontal=True,
+        key="design_selection_widget",
+        on_change=save_design_selection,
         help=(
             "極端な条件の組み合わせを避けたい場合はBox–Behnken、"
             "条件範囲の境界や角を詳しく評価したい場合は面中心型CCDが目安です。"
         ),
     )
-    design_name = "box-behnken" if design_label.startswith("Box") else "central-composite"
 
     with st.popover("？ 使い分けワンポイント"):
         edge_count = 2 * len(input_columns) * (len(input_columns) - 1)

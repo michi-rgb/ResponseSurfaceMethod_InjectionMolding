@@ -4,9 +4,20 @@
 
 ## 起動
 
+Python 3.14 と [uv](https://docs.astral.sh/uv/) を使います。次の PowerShell コマンドは、このディレクトリ内に Python と仮想環境を作成します。
+
 ```powershell
-python -m pip install -r requirements.txt
-python -m streamlit run app.py
+$env:UV_PYTHON_INSTALL_DIR = Join-Path (Get-Location) '.uv-python'
+$env:UV_PROJECT_ENVIRONMENT = '.venv314'
+uv python install 3.14
+uv sync --locked
+uv run --locked streamlit run app.py
+```
+
+テスト用の pytest も `uv sync` でインストールされます。同じ PowerShell セッションで次のコマンドを実行してください。
+
+```powershell
+uv run --locked python -m pytest -q
 ```
 
 ブラウザが開いたら、左側で項目を設定してCSVを読み込みます。初期設定でCSV未選択時はBox–Behnken計画（中心点1回）の13点デモデータで動作します。画面の「入力テンプレートをダウンロード」から現在の項目構成に合う書式例を取得できます。
